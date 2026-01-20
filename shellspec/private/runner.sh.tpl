@@ -70,8 +70,9 @@ if [[ -n "${TEST_SRCDIR:-}" ]]; then
     cd "${TEST_SRCDIR}/${TEST_WORKSPACE:-}"
 fi
 
-# Set up the generated .shellspec config file
-SHELLSPEC_CONFIG="{{SHELLSPEC_CONFIG}}"
+# Resolve the generated .shellspec config file using rlocation
+SHELLSPEC_CONFIG_KEY="{{SHELLSPEC_CONFIG}}"
+SHELLSPEC_CONFIG="$(rlocation "${SHELLSPEC_CONFIG_KEY}")"
 
 # Create a .shellspec file for this run
 if [[ -n "${SHELLSPEC_CONFIG}" ]] && [[ -f "${SHELLSPEC_CONFIG}" ]]; then
@@ -127,13 +128,29 @@ if [[ -n "${CUSTOM_OPTS}" ]]; then
     SHELLSPEC_ARGS+=(${CUSTOM_OPTS})
 fi
 
-# Add the spec files
-SPEC_FILES="{{SPEC_FILES}}"
+# Resolve spec files using rlocation
+SPEC_FILE_KEYS="{{SPEC_FILES}}"
+SPEC_FILES=""
+for key in ${SPEC_FILE_KEYS}; do
+    resolved="$(rlocation "${key}")"
+    if [[ -z "${resolved}" ]]; then
+        echo "ERROR: Could not resolve spec file: ${key}" >&2
+        exit 1
+    fi
+    SPEC_FILES="${SPEC_FILES} ${resolved}"
+done
 
 # =============================================================================
 # Execute ShellSpec
 # =============================================================================
-SHELLSPEC_BIN="{{SHELLSPEC_BIN}}"
+# Resolve the shellspec binary using rlocation
+SHELLSPEC_BIN_KEY="{{SHELLSPEC_BIN}}"
+SHELLSPEC_BIN="$(rlocation "${SHELLSPEC_BIN_KEY}")"
+
+if [[ -z "${SHELLSPEC_BIN}" ]]; then
+    echo "ERROR: Could not resolve shellspec binary: ${SHELLSPEC_BIN_KEY}" >&2
+    exit 1
+fi
 
 # Run shellspec with the collected arguments
 # shellcheck disable=SC2086

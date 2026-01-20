@@ -59,16 +59,30 @@ def _shellspec_test_impl(ctx):
     # use Bazel's bash toolchain
     shell_path = ctx.attr.shell if ctx.attr.shell else ""
 
+    # Compute runfiles keys from short_paths
+    # For external repos, short_path is "../<repo>/<path>", runfiles key is "<repo>/<path>"
+    # For main repo, short_path is the runfiles key directly
+    def _to_runfiles_key(short_path):
+        if short_path.startswith("../"):
+            return short_path[3:]  # Strip "../"
+        return ctx.workspace_name + "/" + short_path
+
+    shellspec_runfiles_key = _to_runfiles_key(shellspec_script.short_path)
+    config_runfiles_key = _to_runfiles_key(shellspec_config.short_path)
+
+    # Build spec file runfiles keys
+    spec_runfiles_keys = " ".join([_to_runfiles_key(f.short_path) for f in spec_files])
+
     # Expand the runner template
     ctx.actions.expand_template(
         template = ctx.file._runner_template,
         output = runner_sh,
         substitutions = {
-            "{{SHELLSPEC_BIN}}": shellspec_script.short_path,
-            "{{SPEC_FILES}}": spec_paths,
+            "{{SHELLSPEC_BIN}}": shellspec_runfiles_key,
+            "{{SPEC_FILES}}": spec_runfiles_keys,
             "{{SHELLSPEC_OPTS}}": shellspec_opts,
             "{{SHELL}}": shell_path,
-            "{{SHELLSPEC_CONFIG}}": shellspec_config.short_path,
+            "{{SHELLSPEC_CONFIG}}": config_runfiles_key,
         },
         is_executable = True,
     )
