@@ -52,6 +52,11 @@ def _shellspec_test_impl(ctx):
     # Get additional shellspec options
     shellspec_opts = " ".join(ctx.attr.shellspec_opts)
 
+    # Get the shell to use - use the Bazel-provided bash for cross-platform support
+    # If user specified a shell, use that; otherwise leave empty to let the runner
+    # use Bazel's bash toolchain
+    shell_path = ctx.attr.shell if ctx.attr.shell else ""
+
     # Expand the runner template
     ctx.actions.expand_template(
         template = ctx.file._runner_template,
@@ -60,7 +65,7 @@ def _shellspec_test_impl(ctx):
             "{{SHELLSPEC_BIN}}": shellspec_script.short_path,
             "{{SPEC_FILES}}": spec_paths,
             "{{SHELLSPEC_OPTS}}": shellspec_opts,
-            "{{SHELL}}": ctx.attr.shell,
+            "{{SHELL}}": shell_path,
             "{{SHELLSPEC_CONFIG}}": shellspec_config.short_path,
         },
         is_executable = True,
@@ -103,8 +108,10 @@ shellspec_test = rule(
             doc = "Additional data files needed at runtime.",
         ),
         "shell": attr.string(
-            default = "/bin/bash",
-            doc = "The shell to use for running tests. Default is /bin/bash.",
+            default = "",
+            doc = """The shell to use for running tests. If empty (the default),
+ShellSpec will use its default shell detection. On most systems this is /bin/sh.
+Common values: "/bin/bash", "/bin/zsh", "/bin/sh".""",
         ),
         "shellspec_opts": attr.string_list(
             doc = "Additional options to pass to shellspec.",

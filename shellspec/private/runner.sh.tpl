@@ -5,7 +5,14 @@
 set -eu
 
 # Ensure HOME is set (shellspec requires it)
-export HOME="${HOME:-/tmp}"
+# On Windows, HOME might not be set in the bash environment
+if [[ -z "${HOME:-}" ]]; then
+    if [[ -n "${USERPROFILE:-}" ]]; then
+        export HOME="${USERPROFILE}"
+    else
+        export HOME="${TMPDIR:-/tmp}"
+    fi
+fi
 
 # =============================================================================
 # Sharding Check
@@ -70,13 +77,13 @@ SHELLSPEC_CONFIG="{{SHELLSPEC_CONFIG}}"
 if [[ -n "${SHELLSPEC_CONFIG}" ]] && [[ -f "${SHELLSPEC_CONFIG}" ]]; then
     # If there's already a .shellspec, back it up
     if [[ -f .shellspec ]] && [[ ! -L .shellspec ]]; then
-        mv .shellspec .shellspec.bak
+        mv .shellspec .shellspec.bak 2>/dev/null || true
     fi
     # Copy the config to the current directory
-    cp "${SHELLSPEC_CONFIG}" .shellspec
+    cp "${SHELLSPEC_CONFIG}" .shellspec 2>/dev/null || true
 else
     # Create a minimal .shellspec if none provided
-    touch .shellspec
+    touch .shellspec 2>/dev/null || true
 fi
 
 # =============================================================================
@@ -84,7 +91,7 @@ fi
 # =============================================================================
 SHELLSPEC_ARGS=()
 
-# Set the shell to use
+# Set the shell to use (only if explicitly specified)
 SHELL_OPT="{{SHELL}}"
 if [[ -n "${SHELL_OPT}" ]]; then
     SHELLSPEC_ARGS+=("--shell" "${SHELL_OPT}")
@@ -107,6 +114,8 @@ SHELLSPEC_ARGS+=("--format" "progress")
 # and then copy it to the expected location
 if [[ -n "${XML_OUTPUT_FILE:-}" ]]; then
     REPORT_DIR=$(dirname "${XML_OUTPUT_FILE}")
+    # Ensure the report directory exists
+    mkdir -p "${REPORT_DIR}" 2>/dev/null || true
     SHELLSPEC_ARGS+=("--reportdir" "${REPORT_DIR}")
     SHELLSPEC_ARGS+=("--output" "junit")
 fi

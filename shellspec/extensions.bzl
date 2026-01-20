@@ -58,9 +58,13 @@ This prevents conflicting registrations in the global namespace of external repo
             version = selected,
         )
 
-    return module_ctx.extension_metadata(
-        reproducible = True,
-    )
+    # extension_metadata with reproducible was added in Bazel 7.1
+    # For compatibility with Bazel 6.x, we check if the method exists
+    if hasattr(module_ctx, "extension_metadata"):
+        return module_ctx.extension_metadata(
+            reproducible = True,
+        )
+    return None
 
 shellspec = module_extension(
     implementation = _shellspec_extension_impl,
