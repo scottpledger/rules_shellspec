@@ -1,17 +1,28 @@
-"""Provides a simple way to test your rules as an external workspace.
-Add a basic smoke-test target below.
+"""End-to-end smoke tests for rules_shellspec.
+
+This package provides a simple way to test rules_shellspec as an external workspace.
 """
 
 load("@bazel_skylib//rules:build_test.bzl", "build_test")
-# load("@com_myorg_rules_mylang//mylang:defs.bzl", "...")
+load("@rules_shellspec//shellspec:defs.bzl", "shellspec_test")
 
-# Replace with a usage of your rule/macro
-filegroup(name = "empty")
+# Example shell library to test
+sh_library(
+    name = "greet_lib",
+    srcs = ["greet.sh"],
+)
 
+# ShellSpec test for the shell library
+shellspec_test(
+    name = "greet_test",
+    srcs = ["greet_spec.sh"],
+    deps = [":greet_lib"],
+)
+
+# Build test to verify the rule can be loaded and instantiated
 build_test(
     name = "smoke_test",
     targets = [
-        # targets you add above
-        ":empty",
+        ":greet_lib",
     ],
 )

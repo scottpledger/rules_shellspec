@@ -1,52 +1,150 @@
-# Template for Bazel rules
+# rules_shellspec
 
-Copy this template to create a Bazel ruleset.
+Bazel rules for [ShellSpec](https://shellspec.info/), a BDD-style testing framework for shell scripts.
 
-Features:
+## Features
 
-- follows the official style guide at https://bazel.build/rules/deploying
-- allows for both WORKSPACE.bazel and bzlmod (MODULE.bazel) usage
-- includes Bazel formatting as a pre-commit hook (using [buildifier])
-- includes API documentation generation
-- includes typical toolchain setup
-- CI configured with GitHub Actions
-- release using GitHub Actions just by pushing a tag
-- the release artifact doesn't need to be built by Bazel, but can still exclude files and stamp the version
-
-Ready to get started? Copy this repo, then
-
-1. search for "com_myorg_rules_mylang" and replace with the name you'll use for your workspace
-1. search for "myorg" and replace with GitHub org
-1. search for "mylang", "Mylang", "MYLANG" and replace with the language/tool your rules are for
-1. rename directory "mylang" similarly
-1. run `pre-commit install` to get lints (see CONTRIBUTING.md)
-1. if you don't need to fetch platform-dependent tools, then remove anything toolchain-related.
-1. (optional) install the [Renovate app](https://github.com/apps/renovate) to get auto-PRs to keep the dependencies up-to-date.
-1. delete this section of the README (everything up to the SNIP).
-
-Optional: if you write tools for your rules to call, you should avoid toolchain dependencies for those tools leaking to all users.
-For example, https://github.com/aspect-build/rules_py actions rely on a couple of binaries written in Rust, but we don't want users to be forced to
-fetch a working Rust toolchain. Instead we want to ship pre-built binaries on our GH releases, and the ruleset fetches these as toolchains.
-See https://blog.aspect.build/releasing-bazel-rulesets-rust for information on how to do this.
-Note that users who _do_ want to build tools from source should still be able to do so, they just need to register a different toolchain earlier.
-
----- SNIP ----
-
-# Bazel rules for mylang
+- `shellspec_test` rule for running ShellSpec tests in Bazel
+- Integration with `sh_library` and `sh_binary` targets from `rules_shell`
+- JUnit XML output for test result reporting
+- Proper handling of Bazel test sharding (fails with clear error if sharding is requested)
+- Coverage warning when `kcov` is not installed
 
 ## Installation
 
-From the release you wish to use:
-<https://github.com/myorg/rules_mylang/releases>
-copy the WORKSPACE snippet into your `WORKSPACE` file.
+### Bzlmod (recommended)
 
-To use a commit rather than a release, you can point at any SHA of the repo.
+Add to your `MODULE.bazel`:
 
-For example to use commit `abc123`:
+```starlark
+bazel_dep(name = "rules_shellspec", version = "0.1.0")
 
-1. Replace `url = "https://github.com/myorg/rules_mylang/releases/download/v0.1.0/rules_mylang-v0.1.0.tar.gz"` with a GitHub-provided source archive like `url = "https://github.com/myorg/rules_mylang/archive/abc123.tar.gz"`
-1. Replace `strip_prefix = "rules_mylang-0.1.0"` with `strip_prefix = "rules_mylang-abc123"`
-1. Update the `sha256`. The easiest way to do this is to comment out the line, then Bazel will
-   print a message with the correct value. Note that GitHub source archives don't have a strong
-   guarantee on the sha256 stability, see
-   <https://github.blog/2023-02-21-update-on-the-future-stability-of-source-code-archives-and-hashes/>
+# Optional: specify a different ShellSpec version
+shellspec = use_extension("@rules_shellspec//shellspec:extensions.bzl", "shellspec")
+shellspec.toolchain(version = "0.28.1")
+use_repo(shellspec, "shellspec")
+```
+
+### WORKSPACE
+
+Add to your `WORKSPACE`:
+
+```starlark
+load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
+
+http_archive(
+    name = "rules_shellspec",
+    sha256 = "...",  # Get from release
+    urls = ["https://github.com/yourorg/rules_shellspec/releases/download/v0.1.0/rules_shellspec-v0.1.0.tar.gz"],
+)
+
+load("@rules_shellspec//shellspec:repositories.bzl", "rules_shellspec_dependencies", "shellspec_register")
+
+rules_shellspec_dependencies()
+shellspec_register()
+```
+
+## Usage
+
+### Basic Example
+
+Create a spec file following [ShellSpec conventions](https://github.com/shellspec/shellspec#tutorial):
+
+```shell
+# greet_spec.sh
+Describe 'greet()'
+  Include ./greet.sh
+
+  It 'greets the world'
+    When call greet "World"
+    The output should eq "Hello, World!"
+  End
+End
+```
+
+Create a `BUILD.bazel` file:
+
+```starlark
+load("@rules_shellspec//shellspec:defs.bzl", "shellspec_test")
+load("@rules_shell//shell:sh_library.bzl", "sh_library")
+
+sh_library(
+    name = "greet_lib",
+    srcs = ["greet.sh"],
+)
+
+shellspec_test(
+    name = "greet_test",
+    srcs = ["greet_spec.sh"],
+    deps = [":greet_lib"],
+)
+```
+
+Run the tests:
+
+```bash
+bazel test //:greet_test
+```
+
+### Rule Reference
+
+#### `shellspec_test`
+
+Runs ShellSpec tests on shell scripts.
+
+**Attributes:**
+
+| Attribute | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `srcs` | `label_list` | required | ShellSpec spec files (`*_spec.sh`) |
+| `deps` | `label_list` | `[]` | Shell library or binary targets to test |
+| `data` | `label_list` | `[]` | Additional data files needed at runtime |
+| `shell` | `string` | `/bin/sh` | Shell to use for running tests |
+| `shellspec_opts` | `string_list` | `[]` | Additional options to pass to shellspec |
+
+**Example with options:**
+
+```starlark
+shellspec_test(
+    name = "my_test",
+    srcs = ["my_spec.sh"],
+    deps = [":my_lib"],
+    shell = "/bin/bash",
+    shellspec_opts = [
+        "--fail-fast",
+        "--jobs", "4",
+    ],
+)
+```
+
+## Limitations
+
+### Test Sharding
+
+ShellSpec does not support Bazel's test sharding mechanism. If you set `shard_count > 1` on a `shellspec_test` target, the test will fail with an error message. This is because ShellSpec runs all specs as a single test suite.
+
+### Coverage
+
+ShellSpec uses [kcov](https://github.com/SimonKagstrom/kcov) for coverage reporting. Currently, kcov is not available as a Bazel module in the BCR, so coverage requires a system-installed kcov.
+
+When running `bazel coverage` without kcov installed, you'll see a warning:
+
+```
+WARNING: Coverage was requested but 'kcov' is not installed.
+ShellSpec requires kcov for shell script coverage reporting.
+Coverage data will not be collected for this test.
+```
+
+## Compatibility
+
+- Bazel 7.0+
+- ShellSpec 0.28.1 (other versions can be configured)
+- `rules_shell` for `sh_library`/`sh_binary` targets
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup and guidelines.
+
+## License
+
+Apache 2.0 - see [LICENSE](LICENSE)

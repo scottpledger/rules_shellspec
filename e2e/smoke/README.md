@@ -1,5 +1,16 @@
-# smoke test
+# Smoke Test
 
-This e2e exercises the repo from an end-users perspective.
-It catches mistakes in our install instructions, or usages that fail when called from an "external" repository to rules_mylang.
-It is also used by the presubmit check for the Bazel Central Registry.
+This directory contains end-to-end tests for rules_shellspec.
+
+## Running Tests
+
+```bash
+cd e2e/smoke
+bazel test //...
+```
+
+## What's Tested
+
+- `shellspec_test` rule can be loaded from the external workspace
+- Basic ShellSpec tests run successfully
+- Shell library dependencies are properly resolved

@@ -1,0 +1,58 @@
+load("@bazel_skylib//lib:unittest.bzl", "unittest")
+load("@rules_testing//lib:analysis_test.bzl", "analysis_test", "test_suite")
+load("//shellspec:defs.bzl", "shellspec_test")
+load(":shellspec_test_tests.bzl", "shellspec_test_suite")
+
+# Unit tests for versions.bzl
+load(":versions_test.bzl", "versions_test_suite")
+
+versions_test_suite(name = "versions_test")
+
+# Analysis tests for shellspec_test rule
+shellspec_test_suite(name = "shellspec_test_suite")
+
+# Example spec file for testing
+genrule(
+    name = "example_spec",
+    outs = ["example_spec.sh"],
+    cmd = """
+cat > $@ << 'EOF'
+#!/bin/sh
+# Example ShellSpec spec file
+
+Describe 'Example test'
+  It 'should pass'
+    When call echo "hello"
+    The output should eq "hello"
+  End
+End
+EOF
+""",
+)
+
+# Example shell library to test
+genrule(
+    name = "example_lib_src",
+    outs = ["example_lib.sh"],
+    cmd = """
+cat > $@ << 'EOF'
+#!/bin/sh
+# Example shell library
+greet() {
+    echo "Hello, $$1!"
+}
+EOF
+""",
+)
+
+sh_library(
+    name = "example_lib",
+    srcs = [":example_lib_src"],
+)
+
+# Integration test - actual shellspec_test target
+shellspec_test(
+    name = "example_shellspec_test",
+    srcs = [":example_spec"],
+    tags = ["manual"],  # Manual because it requires shellspec to be downloaded
+)
