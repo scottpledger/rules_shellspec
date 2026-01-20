@@ -3,6 +3,7 @@
 Provides ShellSpec as a repository for use with Bazel modules.
 """
 
+load("@bazel_skylib//lib:versions.bzl", "versions")
 load("//shellspec/private:versions.bzl", "DEFAULT_SHELLSPEC_VERSION", "SHELLSPEC_VERSIONS")
 load(":repositories.bzl", "shellspec_repository")
 
@@ -59,8 +60,8 @@ This prevents conflicting registrations in the global namespace of external repo
         )
 
     # extension_metadata with reproducible was added in Bazel 7.1
-    # For compatibility with Bazel 6.x, we check if the method exists
-    if hasattr(module_ctx, "extension_metadata"):
+    # For compatibility with Bazel 6.x, we check the version
+    if versions.is_at_least("7.1.0", native.bazel_version):
         return module_ctx.extension_metadata(
             reproducible = True,
         )
