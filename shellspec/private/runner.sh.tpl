@@ -101,12 +101,12 @@ for key in ${SPEC_FILE_KEYS}; do
         exit 1
     fi
     resolved="$(normalize_path "${resolved}")"
-    
+
     # Track the directory of spec files (use the first one's directory)
     if [[ -z "${SPEC_DIR}" ]]; then
         SPEC_DIR="$(dirname "${resolved}")"
     fi
-    
+
     # Store just the filename for running
     SPEC_FILES="${SPEC_FILES} $(basename "${resolved}")"
 done

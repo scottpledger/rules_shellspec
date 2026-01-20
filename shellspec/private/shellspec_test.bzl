@@ -48,9 +48,6 @@ def _shellspec_test_impl(ctx):
     # Create the test runner script
     runner_sh = ctx.actions.declare_file(ctx.label.name + "_runner.sh")
 
-    # Build the spec file paths for the runner
-    spec_paths = " ".join([f.short_path for f in spec_files])
-
     # Get additional shellspec options
     shellspec_opts = " ".join(ctx.attr.shellspec_opts)
 
