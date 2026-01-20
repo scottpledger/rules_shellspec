@@ -85,24 +85,47 @@ normalize_path() {
 }
 
 # =============================================================================
-# Environment Setup
+# Resolve Spec Files First
 # =============================================================================
-# Change to the runfiles directory where test files are available
-if [[ -n "${TEST_SRCDIR:-}" ]]; then
-    cd "${TEST_SRCDIR}/${TEST_WORKSPACE:-}"
+# Resolve spec files and determine their directory.
+# We need to cd to the spec directory so relative sourcing works.
+SPEC_FILE_KEYS="{{SPEC_FILES}}"
+SPEC_FILES=""
+SPEC_DIR=""
+
+for key in ${SPEC_FILE_KEYS}; do
+    # Resolve via rlocation to get the actual path
+    resolved="$(rlocation "${key}")"
+    if [[ -z "${resolved}" ]]; then
+        echo "ERROR: Could not resolve spec file: ${key}" >&2
+        exit 1
+    fi
+    resolved="$(normalize_path "${resolved}")"
+    
+    # Track the directory of spec files (use the first one's directory)
+    if [[ -z "${SPEC_DIR}" ]]; then
+        SPEC_DIR="$(dirname "${resolved}")"
+    fi
+    
+    # Store just the filename for running
+    SPEC_FILES="${SPEC_FILES} $(basename "${resolved}")"
+done
+
+# Change to the spec file directory so relative paths work
+# This allows spec files to use `. ./library.sh` to source dependencies
+if [[ -n "${SPEC_DIR}" ]] && [[ -d "${SPEC_DIR}" ]]; then
+    cd "${SPEC_DIR}"
 fi
 
-# Resolve the generated .shellspec config file using rlocation
+# =============================================================================
+# ShellSpec Config Setup
+# =============================================================================
+# Create a .shellspec file in the current (spec) directory
 SHELLSPEC_CONFIG_KEY="{{SHELLSPEC_CONFIG}}"
 SHELLSPEC_CONFIG="$(normalize_path "$(rlocation "${SHELLSPEC_CONFIG_KEY}")")"
 
-# Create a .shellspec file for this run
 if [[ -n "${SHELLSPEC_CONFIG}" ]] && [[ -f "${SHELLSPEC_CONFIG}" ]]; then
-    # If there's already a .shellspec, back it up
-    if [[ -f .shellspec ]] && [[ ! -L .shellspec ]]; then
-        mv .shellspec .shellspec.bak 2>/dev/null || true
-    fi
-    # Copy the config to the current directory
+    # Copy the generated config to current directory
     cp "${SHELLSPEC_CONFIG}" .shellspec 2>/dev/null || true
 else
     # Create a minimal .shellspec if none provided
@@ -134,7 +157,6 @@ fi
 SHELLSPEC_ARGS+=("--format" "progress")
 
 # If XML_OUTPUT_FILE is set, generate JUnit report to the report directory
-# and then copy it to the expected location
 if [[ -n "${XML_OUTPUT_FILE:-}" ]]; then
     REPORT_DIR=$(dirname "${XML_OUTPUT_FILE}")
     # Ensure the report directory exists
@@ -149,19 +171,6 @@ if [[ -n "${CUSTOM_OPTS}" ]]; then
     # shellcheck disable=SC2086
     SHELLSPEC_ARGS+=(${CUSTOM_OPTS})
 fi
-
-# Resolve spec files using rlocation
-SPEC_FILE_KEYS="{{SPEC_FILES}}"
-SPEC_FILES=""
-for key in ${SPEC_FILE_KEYS}; do
-    resolved="$(rlocation "${key}")"
-    if [[ -z "${resolved}" ]]; then
-        echo "ERROR: Could not resolve spec file: ${key}" >&2
-        exit 1
-    fi
-    resolved="$(normalize_path "${resolved}")"
-    SPEC_FILES="${SPEC_FILES} ${resolved}"
-done
 
 # =============================================================================
 # Execute ShellSpec
