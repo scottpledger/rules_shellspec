@@ -40,7 +40,7 @@ def rules_shellspec_dependencies():
     maybe(
         http_archive,
         name = "bazel_lib",
-        sha256 = "f93d386d8d0b0149031175e81df42a488be4267c3ca2249ba5321c23c60bc1f0",
+        sha256 = "6fd3b1e1a38ca744f9664be4627ced80895c7d2ee353891c172f1ab61309c933",
         strip_prefix = "bazel-lib-3.0.0",
         urls = [
             "https://github.com/aspect-build/bazel-lib/releases/download/v3.0.0/bazel-lib-v3.0.0.tar.gz",
