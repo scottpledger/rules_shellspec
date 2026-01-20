@@ -14,6 +14,13 @@ common --config=ruleset
 # Required until this is the default; expected in Bazel 7
 common --enable_bzlmod
 
+########################
+# Linting configuration
+# Run lint checks with: bazel build --config=lint //...
+# Apply lint aspects to all targets
+build:lint --aspects=//tools/lint:linters.bzl%shellcheck
+build:lint --output_groups=+rules_lint_human
+
 # Ensure that the MODULE.bazel.lock file is complete and committed.
 # This is an important security measure: it ensures that developers on the
 # same rule set download dependencies at the same versions with the same bits.

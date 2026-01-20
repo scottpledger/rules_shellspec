@@ -13,6 +13,7 @@ def rules_shellspec_dependencies():
 
     Users should call this in their WORKSPACE file.
     """
+
     # The minimal version of bazel_skylib we require
     maybe(
         http_archive,

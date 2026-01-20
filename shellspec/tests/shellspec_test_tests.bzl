@@ -121,6 +121,7 @@ def _test_is_test_rule(name):
 
 def _test_is_test_rule_impl(env, target):
     """Verify the rule is a test rule by checking it has an executable."""
+
     # Test rules must have an executable
     default_info = target[DefaultInfo]
     env.expect.that_bool(default_info.files_to_run.executable != None).equals(True)

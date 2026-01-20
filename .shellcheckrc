@@ -1,0 +1,14 @@
+# ShellCheck configuration for rules_shellspec
+# https://github.com/koalaman/shellcheck/wiki/Directive
+
+# Default shell dialect
+shell=bash
+
+# Enable all warnings by default
+enable=all
+
+# Disable specific checks as needed:
+# SC1090: Can't follow non-constant source
+# SC1091: Not following sourced file (not input file)
+# SC2034: Variable appears unused (common in library files)
+disable=SC1090,SC1091,SC2034

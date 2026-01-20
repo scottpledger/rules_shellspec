@@ -3,8 +3,8 @@
 Provides ShellSpec as a repository for use with Bazel modules.
 """
 
-load(":repositories.bzl", "shellspec_repository")
 load("//shellspec/private:versions.bzl", "DEFAULT_SHELLSPEC_VERSION", "SHELLSPEC_VERSIONS")
+load(":repositories.bzl", "shellspec_repository")
 
 _DEFAULT_NAME = "shellspec"
 

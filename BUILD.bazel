@@ -3,6 +3,12 @@ load("@package_metadata//licenses/rules:license.bzl", "license")
 load("@package_metadata//purl:purl.bzl", "purl")
 load("@package_metadata//rules:package_metadata.bzl", "package_metadata")
 
+# Export files for lint/format configuration
+exports_files([
+    "MODULE.bazel",
+    ".shellcheckrc",
+])
+
 package_metadata(
     name = "package_metadata",
     purl = purl.bazel(
