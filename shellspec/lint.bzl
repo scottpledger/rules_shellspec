@@ -36,8 +36,6 @@ shellspec_fmt_test = lint_test(aspect = shellspec_fmt)
 ```
 """
 
-load("@bazel_skylib//lib:paths.bzl", "paths")
-
 # Mnemonic for build actions
 _MNEMONIC = "ShellSpecFormat"
 

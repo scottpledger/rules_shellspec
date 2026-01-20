@@ -4,8 +4,8 @@ These tests verify that the shellspec_test rule produces the expected
 providers and generates appropriate actions.
 """
 
+load("@rules_shell//shell:sh_library.bzl", "sh_library")
 load("@rules_testing//lib:analysis_test.bzl", "analysis_test", "test_suite")
-load("@rules_testing//lib:util.bzl", "util")
 load("//shellspec:defs.bzl", "shellspec_test")
 
 # =============================================================================
@@ -23,7 +23,7 @@ def _test_subjects():
     )
 
     # shellspec_test with deps
-    native.sh_library(
+    sh_library(
         name = "subject_lib",
         srcs = ["example_lib.sh"],
     )

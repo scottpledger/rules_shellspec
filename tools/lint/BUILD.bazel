@@ -1,7 +1,6 @@
 """Lint and format configuration for rules_shellspec."""
 
 load("@aspect_rules_lint//format:defs.bzl", "format_multirun", "format_test")
-load(":linters.bzl", "shellcheck_test")
 
 package(default_visibility = ["//visibility:public"])
 

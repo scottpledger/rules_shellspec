@@ -4,6 +4,7 @@ This package provides a simple way to test rules_shellspec as an external worksp
 """
 
 load("@bazel_skylib//rules:build_test.bzl", "build_test")
+load("@rules_shell//shell:sh_library.bzl", "sh_library")
 load("@rules_shellspec//shellspec:defs.bzl", "shellspec_test")
 
 # Example shell library to test
