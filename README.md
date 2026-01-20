@@ -37,7 +37,7 @@ load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 http_archive(
     name = "rules_shellspec",
     sha256 = "...",  # Get from release
-    urls = ["https://github.com/yourorg/rules_shellspec/releases/download/v0.1.0/rules_shellspec-v0.1.0.tar.gz"],
+    urls = ["https://github.com/scottpledger/rules_shellspec/releases/download/v0.1.0/rules_shellspec-v0.1.0.tar.gz"],
 )
 
 load("@rules_shellspec//shellspec:repositories.bzl", "rules_shellspec_dependencies", "shellspec_register")
