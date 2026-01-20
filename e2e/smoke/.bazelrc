@@ -1,0 +1,3 @@
+
+common --test_output="streamed"
+common:ci --test_output="streamed"
