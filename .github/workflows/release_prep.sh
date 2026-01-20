@@ -44,7 +44,7 @@ http_archive(
     name = "rules_shellspec",
     sha256 = "${SHA}",
     strip_prefix = "${PREFIX}",
-    url = "https://github.com/myorg/rules_shellspec/releases/download/${TAG}/${ARCHIVE}",
+    url = "https://github.com/scottpledger/rules_shellspec/releases/download/${TAG}/${ARCHIVE}",
 )
 EOF
 
