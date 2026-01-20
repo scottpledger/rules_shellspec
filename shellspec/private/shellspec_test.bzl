@@ -109,6 +109,7 @@ def _shellspec_test_impl(ctx):
 shellspec_test = rule(
     implementation = _shellspec_test_impl,
     test = True,
+    toolchains = ["@bazel_tools//tools/sh:toolchain_type"],
     attrs = {
         "srcs": attr.label_list(
             allow_files = [".sh"],
