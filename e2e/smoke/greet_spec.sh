@@ -2,7 +2,7 @@
 # ShellSpec test for greet.sh
 # This file follows ShellSpec BDD syntax
 
-# Include the library under test
+# Source the library under test from runfiles
 # shellcheck source=greet.sh
 . "./greet.sh"
 

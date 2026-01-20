@@ -30,10 +30,30 @@ if [[ -n "${COVERAGE:-}" ]] && [[ "${COVERAGE}" == "1" ]]; then
         echo "WARNING: Coverage was requested but 'kcov' is not installed." >&2
         echo "ShellSpec requires kcov for shell script coverage reporting." >&2
         echo "Coverage data will not be collected for this test." >&2
-        echo "To install kcov, see: https://github.com/SimonKagwortz/kcov" >&2
+        echo "To install kcov, see: https://github.com/SimonKagstrom/kcov" >&2
         echo "" >&2
     fi
 fi
+
+# =============================================================================
+# Runfiles Setup
+# =============================================================================
+# Set up the runfiles environment for the bash runfiles library
+
+# --- begin runfiles.bash initialization v3 ---
+set -uo pipefail; set +e; f=bazel_tools/tools/bash/runfiles/runfiles.bash
+# shellcheck disable=SC1090
+source "${RUNFILES_DIR:-/dev/null}/$f" 2>/dev/null || \
+  source "$(grep -sm1 "^$f " "${RUNFILES_MANIFEST_FILE:-/dev/null}" | cut -f2- -d' ')" 2>/dev/null || \
+  source "$0.runfiles/$f" 2>/dev/null || \
+  source "$(grep -sm1 "^$f " "$0.runfiles_manifest" | cut -f2- -d' ')" 2>/dev/null || \
+  source "$(grep -sm1 "^$f " "$0.exe.runfiles_manifest" | cut -f2- -d' ')" 2>/dev/null || \
+  { echo>&2 "ERROR: cannot find $f"; exit 1; }; f=; set -e
+# --- end runfiles.bash initialization v3 ---
+
+# Export runfiles variables so spec_helper.sh can use them
+export RUNFILES_DIR
+export RUNFILES_MANIFEST_FILE
 
 # =============================================================================
 # Environment Setup
@@ -43,8 +63,19 @@ if [[ -n "${TEST_SRCDIR:-}" ]]; then
     cd "${TEST_SRCDIR}/${TEST_WORKSPACE:-}"
 fi
 
-# Create a .shellspec file if it doesn't exist to satisfy shellspec's project requirement
-if [[ ! -f .shellspec ]]; then
+# Set up the generated .shellspec config file
+SHELLSPEC_CONFIG="{{SHELLSPEC_CONFIG}}"
+
+# Create a .shellspec file for this run
+if [[ -n "${SHELLSPEC_CONFIG}" ]] && [[ -f "${SHELLSPEC_CONFIG}" ]]; then
+    # If there's already a .shellspec, back it up
+    if [[ -f .shellspec ]] && [[ ! -L .shellspec ]]; then
+        mv .shellspec .shellspec.bak
+    fi
+    # Copy the config to the current directory
+    cp "${SHELLSPEC_CONFIG}" .shellspec
+else
+    # Create a minimal .shellspec if none provided
     touch .shellspec
 fi
 
@@ -55,7 +86,7 @@ SHELLSPEC_ARGS=()
 
 # Set the shell to use
 SHELL_OPT="{{SHELL}}"
-if [[ -n "${SHELL_OPT}" ]] && [[ "${SHELL_OPT}" != "/bin/sh" ]]; then
+if [[ -n "${SHELL_OPT}" ]]; then
     SHELLSPEC_ARGS+=("--shell" "${SHELL_OPT}")
 fi
 

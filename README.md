@@ -48,13 +48,25 @@ shellspec_register()
 
 ### Basic Example
 
+Create a shell library:
+
+```shell
+# greet.sh
+greet() {
+    echo "Hello, ${1:-World}!"
+}
+```
+
 Create a spec file following [ShellSpec conventions](https://github.com/shellspec/shellspec#tutorial):
 
 ```shell
 # greet_spec.sh
-Describe 'greet()'
-  Include ./greet.sh
+#!/bin/sh
 
+# Source the library under test - deps are in the runfiles
+. "./greet.sh"
+
+Describe 'greet()'
   It 'greets the world'
     When call greet "World"
     The output should eq "Hello, World!"
@@ -86,6 +98,16 @@ Run the tests:
 bazel test //:greet_test
 ```
 
+### Sourcing Dependencies
+
+Shell libraries specified in `deps` are available in the test's runfiles directory.
+You can source them with a relative path from the runfiles root:
+
+```shell
+# For a dep at //my/package:lib, source it as:
+. "./my/package/lib.sh"
+```
+
 ### Rule Reference
 
 #### `shellspec_test`
@@ -99,8 +121,9 @@ Runs ShellSpec tests on shell scripts.
 | `srcs` | `label_list` | required | ShellSpec spec files (`*_spec.sh`) |
 | `deps` | `label_list` | `[]` | Shell library or binary targets to test |
 | `data` | `label_list` | `[]` | Additional data files needed at runtime |
-| `shell` | `string` | `/bin/sh` | Shell to use for running tests |
+| `shell` | `string` | `/bin/bash` | Shell to use for running tests |
 | `shellspec_opts` | `string_list` | `[]` | Additional options to pass to shellspec |
+| `shellspec_config` | `label` | `None` | Optional custom .shellspec configuration file |
 
 **Example with options:**
 
