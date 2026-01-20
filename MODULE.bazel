@@ -2,7 +2,6 @@
 
 module(
     name = "rules_shellspec",
-    bazel_compatibility = [">=7.0.0"],
 
     # NOTE:
     # version = "",
