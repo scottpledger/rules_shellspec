@@ -63,6 +63,28 @@ export RUNFILES_DIR
 export RUNFILES_MANIFEST_FILE
 
 # =============================================================================
+# Path Conversion Helper (for Windows)
+# =============================================================================
+# On Windows, rlocation may return paths like "D:/path/to/file" which need to
+# be converted to Unix-style paths like "/d/path/to/file" for shellspec.
+normalize_path() {
+    local path="$1"
+    # Check if it's a Windows-style path (e.g., D:/... or D:\...)
+    if [[ "${path}" =~ ^([A-Za-z]):(.*)$ ]]; then
+        local drive="${BASH_REMATCH[1]}"
+        local rest="${BASH_REMATCH[2]}"
+        # Convert to lowercase drive letter and Unix-style path
+        drive="${drive,,}"
+        # Replace backslashes with forward slashes
+        rest="${rest//\\//}"
+        echo "/${drive}${rest}"
+    else
+        # Not a Windows path, return as-is
+        echo "${path}"
+    fi
+}
+
+# =============================================================================
 # Environment Setup
 # =============================================================================
 # Change to the runfiles directory where test files are available
@@ -72,7 +94,7 @@ fi
 
 # Resolve the generated .shellspec config file using rlocation
 SHELLSPEC_CONFIG_KEY="{{SHELLSPEC_CONFIG}}"
-SHELLSPEC_CONFIG="$(rlocation "${SHELLSPEC_CONFIG_KEY}")"
+SHELLSPEC_CONFIG="$(normalize_path "$(rlocation "${SHELLSPEC_CONFIG_KEY}")")"
 
 # Create a .shellspec file for this run
 if [[ -n "${SHELLSPEC_CONFIG}" ]] && [[ -f "${SHELLSPEC_CONFIG}" ]]; then
@@ -137,6 +159,7 @@ for key in ${SPEC_FILE_KEYS}; do
         echo "ERROR: Could not resolve spec file: ${key}" >&2
         exit 1
     fi
+    resolved="$(normalize_path "${resolved}")"
     SPEC_FILES="${SPEC_FILES} ${resolved}"
 done
 
@@ -151,6 +174,8 @@ if [[ -z "${SHELLSPEC_BIN}" ]]; then
     echo "ERROR: Could not resolve shellspec binary: ${SHELLSPEC_BIN_KEY}" >&2
     exit 1
 fi
+
+SHELLSPEC_BIN="$(normalize_path "${SHELLSPEC_BIN}")"
 
 # Run shellspec with the collected arguments
 # shellcheck disable=SC2086

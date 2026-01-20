@@ -1,3 +1,3 @@
 
-common --test_output="streamed"
-common:ci --test_output="streamed"
+common --test_output="errors"
+common:ci --test_output="errors"
