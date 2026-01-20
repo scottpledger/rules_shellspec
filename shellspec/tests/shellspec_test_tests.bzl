@@ -72,12 +72,13 @@ def _test_runner_is_executable(name):
     )
 
 def _test_runner_is_executable_impl(env, target):
-    """Verify the runner script ends with _runner.sh."""
+    """Verify the runner script is named appropriately."""
     default_info = target[DefaultInfo]
     executable = default_info.files_to_run.executable
 
     # The executable should be the runner script
-    env.expect.that_str(executable.basename).contains("_runner.sh")
+    # On Unix it ends with _runner.sh, on Windows it ends with _runner.bat
+    env.expect.that_str(executable.basename).contains("_runner")
 
 def _test_runfiles_include_shellspec(name):
     """Test that runfiles include shellspec files."""

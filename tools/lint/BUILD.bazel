@@ -12,10 +12,15 @@ format_multirun(
 )
 
 # Format check - run with: bazel test //tools/lint:format_test
+# Note: Disabled on Windows due to rules_lint format_test script compatibility issues
 format_test(
     name = "format_test",
     no_sandbox = True,
     shell = "@multitool//tools/shfmt",
     starlark = "@buildifier_prebuilt//:buildifier",
+    target_compatible_with = select({
+        "@platforms//os:windows": ["@platforms//:incompatible"],
+        "//conditions:default": [],
+    }),
     workspace = "//:MODULE.bazel",
 )
