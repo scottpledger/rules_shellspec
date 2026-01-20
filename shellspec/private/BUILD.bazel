@@ -10,6 +10,9 @@ bzl_library(
     name = "shellspec_test",
     srcs = ["shellspec_test.bzl"],
     visibility = ["//shellspec:__subpackages__"],
+    deps = [
+        "@bazel_lib//lib:windows_utils",
+    ],
 )
 
 exports_files(["runner.sh.tpl"])

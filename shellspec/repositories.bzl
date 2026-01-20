@@ -36,6 +36,17 @@ def rules_shellspec_dependencies():
         ],
     )
 
+    # bazel_lib for Windows launcher support
+    maybe(
+        http_archive,
+        name = "bazel_lib",
+        sha256 = "f93d386d8d0b0149031175e81df42a488be4267c3ca2249ba5321c23c60bc1f0",
+        strip_prefix = "bazel-lib-3.0.0",
+        urls = [
+            "https://github.com/aspect-build/bazel-lib/releases/download/v3.0.0/bazel-lib-v3.0.0.tar.gz",
+        ],
+    )
+
 _BUILD_FILE_CONTENT = '''
 package(default_visibility = ["//visibility:public"])
 

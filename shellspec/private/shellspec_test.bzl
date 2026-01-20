@@ -4,6 +4,8 @@ This rule runs ShellSpec tests against shell scripts and produces
 Bazel-compatible test outputs.
 """
 
+load("@bazel_lib//lib:windows_utils.bzl", "create_windows_native_launcher_script")
+
 def _shellspec_test_impl(ctx):
     # Get the ShellSpec files (script + lib files)
     shellspec_files = ctx.files._shellspec_files
@@ -44,7 +46,7 @@ def _shellspec_test_impl(ctx):
         )
 
     # Create the test runner script
-    runner = ctx.actions.declare_file(ctx.label.name + "_runner.sh")
+    runner_sh = ctx.actions.declare_file(ctx.label.name + "_runner.sh")
 
     # Build the spec file paths for the runner
     spec_paths = " ".join([f.short_path for f in spec_files])
@@ -60,7 +62,7 @@ def _shellspec_test_impl(ctx):
     # Expand the runner template
     ctx.actions.expand_template(
         template = ctx.file._runner_template,
-        output = runner,
+        output = runner_sh,
         substitutions = {
             "{{SHELLSPEC_BIN}}": shellspec_script.short_path,
             "{{SPEC_FILES}}": spec_paths,
@@ -71,8 +73,21 @@ def _shellspec_test_impl(ctx):
         is_executable = True,
     )
 
-    # Build the complete runfiles
-    generated_files = [shellspec_config]
+    # Determine if we're on Windows by checking the platform
+    is_windows = ctx.target_platform_has_constraint(ctx.attr._windows_constraint[platform_common.ConstraintValueInfo])
+
+    if is_windows:
+        # On Windows, use bazel_lib's launcher script utility
+        launcher = create_windows_native_launcher_script(
+            ctx,
+            shell_script = runner_sh,
+        )
+        executable = launcher
+    else:
+        executable = runner_sh
+
+    # Build the complete runfiles - always include the shell script
+    generated_files = [shellspec_config, runner_sh]
     runfiles = ctx.runfiles(
         files = spec_files + shellspec_files + ctx.files.data + generated_files,
     )
@@ -86,7 +101,7 @@ def _shellspec_test_impl(ctx):
 
     return [
         DefaultInfo(
-            executable = runner,
+            executable = executable,
             runfiles = runfiles,
         ),
     ]
@@ -132,6 +147,9 @@ Common values: "/bin/bash", "/bin/zsh", "/bin/sh".""",
         "_runfiles_lib": attr.label(
             default = "@bazel_tools//tools/bash/runfiles",
             doc = "The Bazel bash runfiles library.",
+        ),
+        "_windows_constraint": attr.label(
+            default = "@platforms//os:windows",
         ),
     },
     doc = """Runs ShellSpec tests on shell scripts.
