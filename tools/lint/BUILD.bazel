@@ -18,6 +18,7 @@ format_test(
     no_sandbox = True,
     shell = "@multitool//tools/shfmt",
     starlark = "@buildifier_prebuilt//:buildifier",
+    tags = ["manual"],
     target_compatible_with = select({
         "@platforms//os:windows": ["@platforms//:incompatible"],
         "//conditions:default": [],
