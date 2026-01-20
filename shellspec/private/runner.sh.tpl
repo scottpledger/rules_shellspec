@@ -90,6 +90,15 @@ if [[ -n "${SHELL_OPT}" ]]; then
     SHELLSPEC_ARGS+=("--shell" "${SHELL_OPT}")
 fi
 
+# =============================================================================
+# Test Filter Support (--test_filter)
+# =============================================================================
+# Bazel passes --test_filter value via TEST_FILTER environment variable.
+# ShellSpec uses --example (-E) to filter examples by pattern.
+if [[ -n "${TEST_FILTER:-}" ]]; then
+    SHELLSPEC_ARGS+=("--example" "${TEST_FILTER}")
+fi
+
 # Output format and JUnit XML output for Bazel test result integration
 # ShellSpec uses -f for display formatter and -o for report output
 SHELLSPEC_ARGS+=("--format" "progress")

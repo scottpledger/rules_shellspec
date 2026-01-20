@@ -7,8 +7,10 @@ Bazel rules for [ShellSpec](https://shellspec.info/), a BDD-style testing framew
 - `shellspec_test` rule for running ShellSpec tests in Bazel
 - Integration with `sh_library` and `sh_binary` targets from `rules_shell`
 - JUnit XML output for test result reporting
+- `--test_filter` support for running specific examples
 - Proper handling of Bazel test sharding (fails with clear error if sharding is requested)
 - Coverage warning when `kcov` is not installed
+- Integration with [rules_lint](https://github.com/aspect-build/rules_lint) for formatting with altshfmt
 
 ## Installation
 
@@ -98,6 +100,20 @@ Run the tests:
 bazel test //:greet_test
 ```
 
+### Filtering Tests with `--test_filter`
+
+You can run specific examples by name using Bazel's `--test_filter` flag:
+
+```bash
+# Run only examples matching "greets the world"
+bazel test //:greet_test --test_filter="greets the world"
+
+# Run examples in a specific Describe block
+bazel test //:greet_test --test_filter="greet()"
+```
+
+This maps to ShellSpec's `--example` (`-E`) option, which filters examples whose names include the given pattern.
+
 ### Sourcing Dependencies
 
 Shell libraries specified in `deps` are available in the test's runfiles directory.
@@ -137,6 +153,57 @@ shellspec_test(
         "--fail-fast",
         "--jobs", "4",
     ],
+)
+```
+
+## Integration with rules_lint
+
+ShellSpec uses a DSL that extends shell syntax with special keywords like `Describe`, `It`, `When`, etc. Standard `shfmt` doesn't understand this DSL and will mangle the formatting. We recommend using [altshfmt](https://github.com/aspect-build/altshfmt), a fork of shfmt that adds support for ShellSpec's DSL.
+
+### Setting up altshfmt with rules_lint
+
+1. Add altshfmt to your MODULE.bazel (or use rules_multitool to fetch it):
+
+```starlark
+# Example using http_archive
+http_archive(
+    name = "altshfmt",
+    # ... your altshfmt binary
+)
+```
+
+2. Create a linter aspect in `tools/lint/linters.bzl`:
+
+```starlark
+load("@rules_shellspec//shellspec:defs.bzl", "lint_shellspec_aspect")
+load("@aspect_rules_lint//lint:lint_test.bzl", "lint_test")
+
+# Format aspect for shellspec_test rules
+shellspec_fmt = lint_shellspec_aspect(
+    binary = Label("@altshfmt//:altshfmt"),  # Your altshfmt binary
+    config = Label("//:.editorconfig"),  # Optional: shfmt config
+)
+
+# Create a test target factory
+shellspec_fmt_test = lint_test(aspect = shellspec_fmt)
+```
+
+3. Apply the aspect in your `.bazelrc`:
+
+```
+# Format shellspec test files
+build --aspects=//tools/lint:linters.bzl%shellspec_fmt
+build --output_groups=+rules_lint_human
+```
+
+4. Or create explicit format test targets:
+
+```starlark
+load("//tools/lint:linters.bzl", "shellspec_fmt_test")
+
+shellspec_fmt_test(
+    name = "my_spec_format_test",
+    srcs = [":my_test"],  # Reference to a shellspec_test target
 )
 ```
 

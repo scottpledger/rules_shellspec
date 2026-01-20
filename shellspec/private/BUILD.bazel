@@ -12,7 +12,4 @@ bzl_library(
     visibility = ["//shellspec:__subpackages__"],
 )
 
-exports_files([
-    "runner.sh.tpl",
-    "spec_helper.sh.tpl",
-])
+exports_files(["runner.sh.tpl"])
