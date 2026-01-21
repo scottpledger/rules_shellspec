@@ -7,6 +7,14 @@ Bazel-compatible test outputs.
 load("@bazel_lib//lib:windows_utils.bzl", "create_windows_native_launcher_script")
 
 def _shellspec_test_impl(ctx):
+    # Get the bash toolchain
+    bash_toolchain = ctx.toolchains["@bazel_tools//tools/sh:toolchain_type"]
+    if bash_toolchain:
+        bash_path = bash_toolchain.path
+    else:
+        # Fallback if toolchain not available
+        bash_path = "/bin/bash"
+
     # Get the ShellSpec files (script + lib files)
     shellspec_files = ctx.files._shellspec_files
 
@@ -51,11 +59,6 @@ def _shellspec_test_impl(ctx):
     # Get additional shellspec options
     shellspec_opts = " ".join(ctx.attr.shellspec_opts)
 
-    # Get the shell to use - use the Bazel-provided bash for cross-platform support
-    # If user specified a shell, use that; otherwise leave empty to let the runner
-    # use Bazel's bash toolchain
-    shell_path = ctx.attr.shell if ctx.attr.shell else ""
-
     # Compute runfiles keys from short_paths
     # For external repos, short_path is "../<repo>/<path>", runfiles key is "<repo>/<path>"
     # For main repo, short_path is the runfiles key directly
@@ -75,10 +78,10 @@ def _shellspec_test_impl(ctx):
         template = ctx.file._runner_template,
         output = runner_sh,
         substitutions = {
+            "{{BASH_PATH}}": bash_path,
             "{{SHELLSPEC_BIN}}": shellspec_runfiles_key,
             "{{SPEC_FILES}}": spec_runfiles_keys,
             "{{SHELLSPEC_OPTS}}": shellspec_opts,
-            "{{SHELL}}": shell_path,
             "{{SHELLSPEC_CONFIG}}": config_runfiles_key,
         },
         is_executable = True,
@@ -133,12 +136,6 @@ shellspec_test = rule(
         "data": attr.label_list(
             allow_files = True,
             doc = "Additional data files needed at runtime.",
-        ),
-        "shell": attr.string(
-            default = "",
-            doc = """The shell to use for running tests. If empty (the default),
-ShellSpec will use its default shell detection. On most systems this is /bin/sh.
-Common values: "/bin/bash", "/bin/zsh", "/bin/sh".""",
         ),
         "shellspec_opts": attr.string_list(
             doc = "Additional options to pass to shellspec.",

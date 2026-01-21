@@ -137,11 +137,10 @@ fi
 # =============================================================================
 SHELLSPEC_ARGS=()
 
-# Set the shell to use (only if explicitly specified)
-SHELL_OPT="{{SHELL}}"
-if [[ -n "${SHELL_OPT}" ]]; then
-    SHELLSPEC_ARGS+=("--shell" "${SHELL_OPT}")
-fi
+# Always use Bazel's bash toolchain for hermetic, reproducible tests
+# Normalize the path for Windows compatibility
+BASH_PATH="$(normalize_path "{{BASH_PATH}}")"
+SHELLSPEC_ARGS+=("--shell" "${BASH_PATH}")
 
 # =============================================================================
 # Test Filter Support (--test_filter)

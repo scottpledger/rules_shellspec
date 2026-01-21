@@ -39,7 +39,6 @@ def _test_subjects():
     shellspec_test(
         name = "subject_with_opts_test",
         srcs = ["example_spec.sh"],
-        shell = "/bin/bash",
         shellspec_opts = ["--fail-fast"],
         tags = ["manual"],
     )
