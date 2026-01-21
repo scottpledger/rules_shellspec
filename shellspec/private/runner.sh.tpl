@@ -138,9 +138,10 @@ fi
 SHELLSPEC_ARGS=()
 
 # Always use Bazel's bash toolchain for hermetic, reproducible tests
-# Normalize the path for Windows compatibility
-BASH_PATH="$(normalize_path "{{BASH_PATH}}")"
-SHELLSPEC_ARGS+=("--shell" "${BASH_PATH}")
+# Note: We don't normalize BASH_PATH because Windows-style paths (C:/...)
+# work directly in Git Bash/MSYS2, and normalizing can cause issues with
+# paths containing spaces (like "Program Files")
+SHELLSPEC_ARGS+=("--shell" "{{BASH_PATH}}")
 
 # =============================================================================
 # Test Filter Support (--test_filter)
