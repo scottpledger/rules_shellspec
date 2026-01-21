@@ -138,10 +138,16 @@ fi
 SHELLSPEC_ARGS=()
 
 # Always use Bazel's bash toolchain for hermetic, reproducible tests
-# Note: We don't normalize BASH_PATH because Windows-style paths (C:/...)
-# work directly in Git Bash/MSYS2, and normalizing can cause issues with
-# paths containing spaces (like "Program Files")
-SHELLSPEC_ARGS+=("--shell" "{{BASH_PATH}}")
+# On Windows, shellspec has trouble verifying shells with Windows-style paths,
+# so we just use "bash" since we're already running in a bash environment.
+# On Unix, we use the full path from Bazel's toolchain.
+if [[ "${OSTYPE:-}" == "msys" ]] || [[ "${OSTYPE:-}" == "cygwin" ]] || [[ -n "${MSYSTEM:-}" ]]; then
+    # Windows (Git Bash/MSYS2/Cygwin) - use bash from PATH
+    SHELLSPEC_ARGS+=("--shell" "bash")
+else
+    # Unix - use the full path from Bazel's toolchain
+    SHELLSPEC_ARGS+=("--shell" "{{BASH_PATH}}")
+fi
 
 # =============================================================================
 # Test Filter Support (--test_filter)
