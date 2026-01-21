@@ -132,14 +132,15 @@ Runs ShellSpec tests on shell scripts.
 
 **Attributes:**
 
-| Attribute          | Type          | Default     | Description                                   |
-| ------------------ | ------------- | ----------- | --------------------------------------------- |
-| `srcs`             | `label_list`  | required    | ShellSpec spec files (`*_spec.sh`)            |
-| `deps`             | `label_list`  | `[]`        | Shell library or binary targets to test       |
-| `data`             | `label_list`  | `[]`        | Additional data files needed at runtime       |
-| `shell`            | `string`      | `/bin/bash` | Shell to use for running tests                |
-| `shellspec_opts`   | `string_list` | `[]`        | Additional options to pass to shellspec       |
-| `shellspec_config` | `label`       | `None`      | Optional custom .shellspec configuration file |
+| Attribute          | Type          | Default  | Description                                   |
+| ------------------ | ------------- | -------- | --------------------------------------------- |
+| `srcs`             | `label_list`  | required | ShellSpec spec files (`*_spec.sh`)            |
+| `deps`             | `label_list`  | `[]`     | Shell library or binary targets to test       |
+| `data`             | `label_list`  | `[]`     | Additional data files needed at runtime       |
+| `shellspec_opts`   | `string_list` | `[]`     | Additional options to pass to shellspec       |
+| `shellspec_config` | `label`       | `None`   | Optional custom .shellspec configuration file |
+
+**Note:** The rule uses Bazel's bash toolchain for hermetic, reproducible tests.
 
 **Example with options:**
 
@@ -148,7 +149,6 @@ shellspec_test(
     name = "my_test",
     srcs = ["my_spec.sh"],
     deps = [":my_lib"],
-    shell = "/bin/bash",
     shellspec_opts = [
         "--fail-fast",
         "--jobs", "4",
