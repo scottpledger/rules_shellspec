@@ -84,6 +84,28 @@ normalize_path() {
     fi
 }
 
+# Resolve location-derived env paths through the runfiles library. This works
+# with both runfiles directories and manifest-only runfiles on Windows.
+LOCATION_ENV_KEYS=({{LOCATION_ENV_KEYS}})
+if [[ "{{LOCATION_ENV_KEY_COUNT}}" -gt 0 ]]; then
+    for key in "${LOCATION_ENV_KEYS[@]}"; do
+        value="${!key}"
+        while [[ "${value}" == *"__RULES_SHELLSPEC_RUNFILES_KEY_BEGIN__"* ]]; do
+            prefix="${value%%"__RULES_SHELLSPEC_RUNFILES_KEY_BEGIN__"*}"
+            remainder="${value#*"__RULES_SHELLSPEC_RUNFILES_KEY_BEGIN__"}"
+            runfiles_key="${remainder%%"__RULES_SHELLSPEC_RUNFILES_KEY_END__"*}"
+            suffix="${remainder#*"__RULES_SHELLSPEC_RUNFILES_KEY_END__"}"
+            resolved="$(rlocation "${runfiles_key}")"
+            if [[ -z "${resolved}" ]]; then
+                echo "ERROR: Could not resolve env runfile: ${runfiles_key}" >&2
+                exit 1
+            fi
+            value="${prefix}$(normalize_path "${resolved}")${suffix}"
+        done
+        export "${key}=${value}"
+    done
+fi
+
 # =============================================================================
 # Resolve Spec Files First
 # =============================================================================

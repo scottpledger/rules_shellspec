@@ -6,6 +6,46 @@ Bazel-compatible test outputs.
 
 load("@bazel_lib//lib:windows_utils.bzl", "create_windows_native_launcher_script")
 
+_RUNFILES_KEY_BEGIN = "__RULES_SHELLSPEC_RUNFILES_KEY_BEGIN__"
+_RUNFILES_KEY_END = "__RULES_SHELLSPEC_RUNFILES_KEY_END__"
+
+def _rootpath_to_runfiles_key(ctx, path):
+    if path.startswith("../"):
+        return path[3:]
+    return ctx.workspace_name + "/" + path
+
+def _expand_env_value(ctx, value):
+    """Expands an env value, marking location paths for runtime resolution."""
+    has_locations = False
+
+    for location_prefix, rootpath_prefix in [
+        ("$(locations ", "$(rootpaths "),
+        ("$(location ", "$(rootpath "),
+    ]:
+        for _ in range(len(value.split(location_prefix)) - 1):
+            start = value.find(location_prefix)
+            end = value.find(")", start)
+            if end == -1:
+                break
+
+            rootpath_expression = rootpath_prefix + value[start + len(location_prefix):end + 1]
+            rootpaths = ctx.expand_location(rootpath_expression, ctx.attr.data)
+            marked_paths = " ".join([
+                _RUNFILES_KEY_BEGIN + _rootpath_to_runfiles_key(ctx, path) + _RUNFILES_KEY_END
+                for path in rootpaths.split(" ")
+            ])
+            value = value[:start] + marked_paths + value[end + 1:]
+            has_locations = True
+
+    return struct(
+        has_locations = has_locations,
+        value = ctx.expand_make_variables(
+            "env",
+            ctx.expand_location(value, ctx.attr.data),
+            {},
+        ),
+    )
+
 def _shellspec_test_impl(ctx):
     # Get the bash toolchain
     bash_toolchain = ctx.toolchains["@bazel_tools//tools/sh:toolchain_type"]
@@ -73,6 +113,14 @@ def _shellspec_test_impl(ctx):
     # Build spec file runfiles keys
     spec_runfiles_keys = " ".join([_to_runfiles_key(f.short_path) for f in spec_files])
 
+    expanded_env = {}
+    location_env_keys = []
+    for key, value in ctx.attr.env.items():
+        expanded = _expand_env_value(ctx, value)
+        expanded_env[key] = expanded.value
+        if expanded.has_locations:
+            location_env_keys.append(key)
+
     # Expand the runner template
     ctx.actions.expand_template(
         template = ctx.file._runner_template,
@@ -83,6 +131,8 @@ def _shellspec_test_impl(ctx):
             "{{SPEC_FILES}}": spec_runfiles_keys,
             "{{SHELLSPEC_OPTS}}": shellspec_opts,
             "{{SHELLSPEC_CONFIG}}": config_runfiles_key,
+            "{{LOCATION_ENV_KEYS}}": " ".join(["'%s'" % key.replace("'", "'\"'\"'") for key in location_env_keys]),
+            "{{LOCATION_ENV_KEY_COUNT}}": str(len(location_env_keys)),
         },
         is_executable = True,
     )
@@ -113,11 +163,16 @@ def _shellspec_test_impl(ctx):
     # Include the bash runfiles library
     runfiles = runfiles.merge(ctx.attr._runfiles_lib[DefaultInfo].default_runfiles)
 
+    run_environment = RunEnvironmentInfo(
+        environment = expanded_env,
+    )
+
     return [
         DefaultInfo(
             executable = executable,
             runfiles = runfiles,
         ),
+        run_environment,
     ]
 
 shellspec_test = rule(
@@ -136,6 +191,9 @@ shellspec_test = rule(
         "data": attr.label_list(
             allow_files = True,
             doc = "Additional data files needed at runtime.",
+        ),
+        "env": attr.string_dict(
+            doc = "Environment variables to set when the test executes. Values support $(location) and Make variable expansion.",
         ),
         "shellspec_opts": attr.string_list(
             doc = "Additional options to pass to shellspec.",
@@ -189,6 +247,7 @@ shellspec_test(
     srcs = ["my_script_spec.sh"],
     deps = [":my_script"],
     data = ["test_data.txt"],
+    env = {"TEST_DATA": "$(location test_data.txt)"},
 )
 ```
 """,

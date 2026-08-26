@@ -43,6 +43,19 @@ def _test_subjects():
         tags = ["manual"],
     )
 
+    # shellspec_test with environment variables
+    shellspec_test(
+        name = "subject_with_env_test",
+        srcs = ["example_spec.sh"],
+        data = [":example_spec"],
+        env = {
+            "DATA_PATH": "$(location :example_spec)",
+            "MODE": "$(COMPILATION_MODE)",
+            "TEST_VALUE": "configured",
+        },
+        tags = ["manual"],
+    )
+
 # =============================================================================
 # Analysis Tests
 # =============================================================================
@@ -126,6 +139,24 @@ def _test_is_test_rule_impl(env, target):
     default_info = target[DefaultInfo]
     env.expect.that_bool(default_info.files_to_run.executable != None).equals(True)
 
+def _test_run_environment(name):
+    """Test that env values are exposed and expanded."""
+    analysis_test(
+        name = name,
+        impl = _test_run_environment_impl,
+        target = ":subject_with_env_test",
+    )
+
+def _test_run_environment_impl(env, target):
+    """Verify env values are propagated through RunEnvironmentInfo."""
+    run_environment = target[RunEnvironmentInfo].environment
+
+    env.expect.that_str(run_environment["TEST_VALUE"]).equals("configured")
+    env.expect.that_str(run_environment["DATA_PATH"]).equals(
+        "__RULES_SHELLSPEC_RUNFILES_KEY_BEGIN___main/shellspec/tests/example_spec.sh__RULES_SHELLSPEC_RUNFILES_KEY_END__",
+    )
+    env.expect.that_str(run_environment["MODE"]).equals("fastbuild")
+
 # =============================================================================
 # Test Suite
 # =============================================================================
@@ -146,5 +177,6 @@ def shellspec_test_suite(name):
             _test_runfiles_include_shellspec,
             _test_deps_merged_into_runfiles,
             _test_is_test_rule,
+            _test_run_environment,
         ],
     )
