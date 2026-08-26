@@ -24,6 +24,33 @@ Describe 'Example test'
     When call echo "hello"
     The output should eq "hello"
   End
+
+  It 'can read data from an env location'
+    When call cat "$$ENV_DATA"
+    The output should eq "environment data"
+  End
+End
+EOF
+""",
+)
+
+genrule(
+    name = "env_data",
+    outs = ["env_data.txt"],
+    cmd = "echo 'environment data' > $@",
+)
+
+genrule(
+    name = "basic_spec",
+    outs = ["basic_spec.sh"],
+    cmd = """
+cat > $@ << 'EOF'
+#!/bin/sh
+Describe 'Basic test'
+  It 'runs without location env values'
+    When call echo "ok"
+    The output should eq "ok"
+  End
 End
 EOF
 """,
@@ -57,5 +84,13 @@ sh_library(
 shellspec_test(
     name = "example_shellspec_test",
     srcs = [":example_spec"],
+    data = [":env_data"],
+    env = {"ENV_DATA": "$(location :env_data)"},
     tags = ["manual"],  # Manual because it requires shellspec to be downloaded
+)
+
+shellspec_test(
+    name = "example_without_env_test",
+    srcs = [":basic_spec"],
+    tags = ["manual"],
 )

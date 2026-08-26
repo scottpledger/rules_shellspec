@@ -137,6 +137,7 @@ Runs ShellSpec tests on shell scripts.
 | `srcs`             | `label_list`  | required | ShellSpec spec files (`*_spec.sh`)            |
 | `deps`             | `label_list`  | `[]`     | Shell library or binary targets to test       |
 | `data`             | `label_list`  | `[]`     | Additional data files needed at runtime       |
+| `env`              | `string_dict` | `{}`     | Environment variables set for the test        |
 | `shellspec_opts`   | `string_list` | `[]`     | Additional options to pass to shellspec       |
 | `shellspec_config` | `label`       | `None`   | Optional custom .shellspec configuration file |
 
@@ -149,6 +150,11 @@ shellspec_test(
     name = "my_test",
     srcs = ["my_spec.sh"],
     deps = [":my_lib"],
+    data = ["test_data.txt"],
+    env = {
+        "TEST_DATA": "$(location test_data.txt)",
+        "TEST_MODE": "$(COMPILATION_MODE)",
+    },
     shellspec_opts = [
         "--fail-fast",
         "--jobs", "4",
