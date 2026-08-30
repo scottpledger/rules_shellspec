@@ -29,10 +29,10 @@ def rules_shellspec_dependencies():
     maybe(
         http_archive,
         name = "rules_shell",
-        sha256 = "bc61ef94facc78e20a645726f64756e5e285a045037c7a61f65af2941f4c25e1",
-        strip_prefix = "rules_shell-0.4.1",
+        sha256 = "20721f63908879c083f94869e618ea8d4ff5edb91ff9a72a2ebee357fdbc352d",
+        strip_prefix = "rules_shell-0.8.0",
         urls = [
-            "https://github.com/bazelbuild/rules_shell/releases/download/v0.4.1/rules_shell-v0.4.1.tar.gz",
+            "https://github.com/bazelbuild/rules_shell/releases/download/v0.8.0/rules_shell-v0.8.0.tar.gz",
         ],
     )
 
